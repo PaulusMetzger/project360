@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>360 Panorama Viewer with Gyroscope</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const geometry = new THREE.SphereGeometry(500, 60, 40);
+        geometry.scale(-1, 1, 1); // Отразить сферу для корректного отображения текстуры
+
+        const texture = new THREE.TextureLoader().load('TestR.jpg');
+        const material = new THREE.MeshBasicMaterial({ map: texture });
+
+        const sphere = new THREE.Mesh(geometry, material);
+        scene.add(sphere);
+
+        camera.position.set(0, 0, 0.1);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Обработка данных гироскопа
+        if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+            // Запрос разрешения на доступ к гироскопу (требуется для iOS 13+)
+            DeviceOrientationEvent.requestPermission()
+                .then(permissionState => {
+                    if (permissionState === 'granted') {
+                        window.addEventListener('deviceorientation', handleOrientation);
+                    }
+                })
+                .catch(console.error);
+        } else {
+            // Для Android и других устройств
+            window.addEventListener('deviceorientation', handleOrientation);
+        }
+
+        function handleOrientation(event) {
+            const alpha = event.alpha ? THREE.MathUtils.degToRad(event.alpha) : 0; // Поворот вокруг оси Z
+            const beta = event.beta ? THREE.MathUtils.degToRad(event.beta) : 0;   // Поворот вокруг оси X
+            const gamma = event.gamma ? THREE.MathUtils.degToRad(event.gamma) : 0; // Поворот вокруг оси Y
+
+            // Обновляем вращение сферы
+            sphere.rotation.set(beta, alpha, -gamma);
+        }
+    </script>
+</body>
+</html>
